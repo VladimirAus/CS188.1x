@@ -58,6 +58,41 @@ class SearchProblem:
         """
         util.raiseNotDefined()
 
+class VisitedQueue(util.Queue):
+    """
+    This class extends queue to provide list.
+    """
+
+    def contains(self, elem):
+        return elem in self.list
+
+    def getList(self):
+        return self.list
+
+class VisitedStack(util.Stack):
+    """
+    This class extends queue to provide list.
+    """
+
+    def contains(self, elem):
+        return elem in self.list
+
+    def getList(self):
+        return self.list
+
+def getDerection(strDir):
+    from game import Directions
+    s = Directions.SOUTH
+    w = Directions.WEST
+    n = Directions.NORTH
+    e = Directions.EAST
+    if strDir == 'North': return n
+    if strDir == 'South': return s
+    if strDir == 'East': return e
+    if strDir == 'West': return w
+
+
+
 
 def tinyMazeSearch(problem):
     """
@@ -84,14 +119,90 @@ def depthFirstSearch(problem):
     print "Start's successors:", problem.getSuccessors(problem.getStartState())
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    #print "Start:", problem.getStartState()
+    #print "Is the start a goal?", problem.isGoalState(problem.getStartState())
+    #print "Start's successors:", problem.getSuccessors(problem.getStartState())
+    #print "Start:", problem.getVisitedList()
+    #print "Solution:", depthFirstSearchCheck(problem, problem.getStartState())
+
+    vq = VisitedQueue()
+    solution = depthFirstSearchCheck(problem, problem.getStartState(), vq)
+    #print "Solution:", solution
+    #q = util.Queue()
+    #for state in solution:
+    #    q.push(state)
+    return solution
+
+    #util.raiseNotDefined()
+
+def depthFirstSearchCheck(problem, currentNode, visitedQueue):
+    
+    "I fnow a goal, expand and check successors first"
+    visitedQueue.push(currentNode);
+    for (state,direction,depth) in problem.getSuccessors(currentNode):
+        if not visitedQueue.contains(state):
+        #direction, state, depth = successor
+            if problem.isGoalState(state):
+                #return [getDerection(direction)]
+                return [direction]
+            else:
+                q = depthFirstSearchCheck(problem, state, visitedQueue)
+                if None not in q:
+                    #q.insert(0,getDerection(direction))
+                    q.insert(0,direction)
+                    return q
+
+    #q = util.Queue()
+    #q.push(None)
+    return [None]
 
 def breadthFirstSearch(problem):
     """
     Search the shallowest nodes in the search tree first.
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    vq = VisitedQueue()
+    solution = breadthFirstSearchCheck(problem, [problem.getStartState()], vq, [problem.getStartState()])
+    return solution
+
+def breadthFirstSearchCheck(problem, nodesToCheck, visitedQueue, path):
+    
+    layerToSend = []
+
+    walkedPath = path
+
+    "First check width"
+    for currentNode in nodesToCheck:
+        visitedQueue.push(currentNode);
+        
+        successors = problem.getSuccessors(currentNode)
+        for (state,direction,depth) in successors:
+            if not visitedQueue.contains(state):
+                layerToSend.append(state)
+                if problem.isGoalState(state):
+                    path.append(direction)
+                    return path
+    
+    #print "Layer to send",layerToSend
+
+    "New layer check"
+    for currentNode in nodesToCheck:
+        path = walkedPath
+        path.append(currentNode)
+        return breadthFirstSearchCheck(problem, layerToSend, visitedQueue, path)
+    
+    """
+    if None not in q:
+        #q.insert(0,getDerection(direction))
+        q.insert(0,direction)
+        return q
+
+    #q = util.Queue()
+    #q.push(None)
+    
+    """
+    return [None]
 
 def uniformCostSearch(problem):
     "Search the node of least total cost first. "
