@@ -63,6 +63,15 @@ class VisitedQueue(util.Queue):
     This class extends queue to provide list.
     """
 
+    def __getitem__(self, index):
+        return self.list[index]
+
+    def index(self, elem):
+        if (elem != None):
+            return self.list.index(elem)
+        else:
+            return None
+
     def contains(self, elem):
         return elem in self.list
 
@@ -102,7 +111,7 @@ def tinyMazeSearch(problem):
     from game import Directions
     s = Directions.SOUTH
     w = Directions.WEST
-    return  [s,s,w,s,w,w,s,w]
+    return [s,s,w,s,w,w,s,w]
 
 def depthFirstSearch(problem):
     """
@@ -127,6 +136,7 @@ def depthFirstSearch(problem):
     #print "Solution:", depthFirstSearchCheck(problem, problem.getStartState())
 
     vq = VisitedQueue()
+    vq.push(problem.getStartState())
     solution = depthFirstSearchCheck(problem, problem.getStartState(), vq)
     #print "Solution:", solution
     #q = util.Queue()
@@ -162,52 +172,185 @@ def breadthFirstSearch(problem):
     Search the shallowest nodes in the search tree first.
     """
     "*** YOUR CODE HERE ***"
+    
     vq = VisitedQueue()
-    solution = breadthFirstSearchCheck(problem, [problem.getStartState()], vq, [problem.getStartState()])
+    #vq.push(problem.getStartState())
+    (index, solution) = breadthFirstSearchCheck(problem, [[(problem.getStartState(), None, 0)]], vq, -1)
+    print solution
     return solution
 
-def breadthFirstSearchCheck(problem, nodesToCheck, visitedQueue, path):
-    
-    layerToSend = []
+def breadthFirstSearchCheck(problem, currentLayer, visitedQueue, level):
 
-    walkedPath = path
+    if (level == 99):
+        print "Error"
+        return []
 
-    "First check width"
-    for currentNode in nodesToCheck:
-        visitedQueue.push(currentNode);
-        
-        successors = problem.getSuccessors(currentNode)
-        for (state,direction,depth) in successors:
+    #print "0"
+    nextLayer = []
+    branchCount = -1
+    level = level + 1
+
+    # Checking layer before solution is found
+    #print currentLayer;
+    for branch in currentLayer:
+        #print "1"
+        branchCount = branchCount + 1
+        for (state,direction,depth) in branch:
+            #if not visitedQueue.contains(state):
+            if problem.isGoalState(state):
+                #print ("Solution", state)
+                return (branchCount, [direction])
             if not visitedQueue.contains(state):
-                layerToSend.append(state)
-                if problem.isGoalState(state):
-                    path.append(direction)
-                    return path
-    
-    #print "Layer to send",layerToSend
+                visitedQueue.push(state)
+                #print visitedQueue.getList()
+                nextLayer.append(problem.getSuccessors(state))
+            else:
+                nextLayer.append([])
 
-    "New layer check"
-    for currentNode in nodesToCheck:
-        path = walkedPath
-        path.append(currentNode)
-        return breadthFirstSearchCheck(problem, layerToSend, visitedQueue, path)
+
     
     """
-    if None not in q:
-        #q.insert(0,getDerection(direction))
-        q.insert(0,direction)
-        return q
-
-    #q = util.Queue()
-    #q.push(None)
-    
+    for branch2 in currentLayer:
+        #print "2"
+        for (state,direction,depth) in branch2:
+            #print state
+            if not visitedQueue.contains(state):
+                visitedQueue.push(state)
+                #print visitedQueue.getList()
+                nextLayer.append(problem.getSuccessors(state))
     """
-    return [None]
+
+    (index, solution) = breadthFirstSearchCheck(problem, nextLayer, visitedQueue, level)
+    #print (index, solution, currentLayer)
+    if (level == 0):
+        return (None, solution)
+    branchCount = -1
+    nodeCount = -1
+
+    # Checking layer after solution was found
+    for branch in currentLayer:
+        branchCount = branchCount + 1
+        for (state,direction,depth) in branch:
+            nodeCount = nodeCount + 1
+            if (index == nodeCount):
+                #print direction
+                solution.insert(0,direction)
+                #print (branchCount, solution)
+                return (branchCount, solution)
+
 
 def uniformCostSearch(problem):
     "Search the node of least total cost first. "
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    
+    pq = util.PriorityQueue()
+    vq = VisitedQueue()
+    pq.push((problem.getStartState(), None, 0, []), 0)
+    result = uniformCostSearchCheck(problem, pq, vq)
+    print result
+    return result
+
+def uniformCostSearchCheck(problem, priorityQueue, visitedQueue):
+    #print visitedQueue.getList()
+
+    (coord,direction,cost,path) = priorityQueue.pop();
+    print ("pop", coord,direction,cost)
+    visitedQueue.push(coord);
+    #if (direction != None):
+    #    path.append(direction)
+
+    if not problem.isGoalState(coord):
+        for (cldCoord,cldDir,cldCost) in problem.getSuccessors(coord):
+            pathNew = path[:]
+            print ("Path", pathNew)
+            if not visitedQueue.contains(cldCoord):
+                print ("push", cldCoord,cldDir,cldCost, cost + cldCost)
+                pathNew.append(cldDir)
+                priorityQueue.push((cldCoord,cldDir,cost + cldCost,pathNew), cost + cldCost)
+
+        path = uniformCostSearchCheck(problem, priorityQueue, visitedQueue);
+
+    return path
+
+"""
+def uniformCostSearch2(problem):
+    "Search the node of least total cost first. "
+    
+    pq = util.PriorityQueue()
+    vq = VisitedQueue()
+    prq = VisitedQueue()
+    dq = VisitedQueue()
+    iq = VisitedQueue()
+    #print problem.getStartState()
+    #s = problem.getStartState()
+    #pa.push(None)
+    pq.push((problem.getStartState(), None, 0, None), 0)
+    (direct, coord) = uniformCostSearchCheck2(problem, pq, vq, prq, dq, iq, 0)
+    #print convertPathToDir(solution)
+    #direct = []
+    #print direct
+    direct.pop(len(direct)-1)
+    return (direct)
+
+
+def uniformCostSearchCheck2(problem, priorityQueue, visitedQueue, parentsQueue, dirQueue, indexQueue, index):
+
+    #print "ucs"
+    #print priorityQueue.pop()
+    #return [];
+
+    (coord,direction,cost,parent, oldIndex) = priorityQueue.pop();
+    visitedQueue.push(coord);
+    #if (parent != None):
+    parentsQueue.push(parent);
+    dirQueue.push(direction);
+    indexQueue.push(oldIndex)
+    
+    q = []
+    if problem.isGoalState(coord):
+        #print "goals"
+        return ([direction],[coord])
+    index = index + 1
+
+    else:
+        for (cldCoord,cldDir,cldCost) in problem.getSuccessors(coord):
+            if not visitedQueue.contains(cldCoord):
+                priorityQueue.push((cldCoord,cldDir,cldCost,coord), cost + cldCost)
+                #(x,y) = cldCoord
+                #parentsArray[x][y] = coord
+        (d,q) = uniformCostSearchCheck2(problem, priorityQueue, visitedQueue, parentsQueue, dirQueue, indexQueue, index);
+        ind = visitedQueue.index(q[0])
+        #(x1,y1) = q[0]
+        if (parentsQueue[ind] != None):
+            q.insert(0,parentsQueue[ind])
+            d.insert(0,dirQueue[ind])
+        return (d,q)
+
+    print "No solution"
+    #return q
+
+def convertPathToDir(path):
+    #print path
+    dir = []
+    from game import Directions
+    s = Directions.SOUTH
+    w = Directions.WEST
+    n = Directions.NORTH
+    e = Directions.EAST
+
+    for i in range(len(path)-1):
+        (x1,y1) = path[i]
+        (x2,y2) = path[i+1]
+        if (x1-x2 == 1): 
+            dir.append(w)
+        if (x2-x1 == 1): 
+            dir.append(e)
+        if (y1-y2 == 1): 
+            dir.append(s)
+        if (x2-x1 == 1): 
+            dir.append(n)
+
+    return dir
+"""
 
 def nullHeuristic(state, problem=None):
     """
